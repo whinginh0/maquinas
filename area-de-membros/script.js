@@ -1,0 +1,545 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* ==========================================================================
+       DESBLOQUEIO AUTOMÁTICO DOS BÔNUS (a partir de Domingo 13/07/2026)
+       ========================================================================== */
+    const UNLOCK_DATE = new Date('2026-07-12T00:00:00-03:00'); // Domingo às 00:00 horário de Brasília
+    const now = new Date();
+
+    if (now >= UNLOCK_DATE) {
+        document.querySelectorAll('.bonus-lock-overlay').forEach(el => {
+            el.classList.add('unlocked');
+            setTimeout(() => el.remove(), 500); // remove do DOM após fade-out
+        });
+    }
+
+
+    /* ==========================================================================
+       INICIALIZAÇÃO DO SUPABASE
+       ========================================================================== */
+    const SUPABASE_URL = "https://zexvwhhmxvjlbnksgjkr.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHZ3aGhteHZqbGJua3NnamtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTE0MzksImV4cCI6MjA5Nzk4NzQzOX0.hUCNqjqSi7haGBHRPTFhkYdAMmuDXwQOxDUwNx9QcXk";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    /* ==========================================================================
+       ESTADOS DA APLICAÇÃO & PERSISTÊNCIA
+       ========================================================================== */
+    const STATE = {
+        get isLoggedIn() {
+            return sessionStorage.getItem('lavadora_user_logged_in') === 'true';
+        },
+        login(memberData) {
+            sessionStorage.setItem('lavadora_user_logged_in', 'true');
+            sessionStorage.setItem('lavadora_member_data', JSON.stringify(memberData));
+        },
+        logout() {
+            sessionStorage.removeItem('lavadora_user_logged_in');
+            sessionStorage.removeItem('lavadora_member_data');
+        },
+        get memberData() {
+            try {
+                return JSON.parse(sessionStorage.getItem('lavadora_member_data')) || null;
+            } catch (e) {
+                return null;
+            }
+        },
+        get completedMaterials() {
+            const member = this.memberData;
+            if (!member) return [];
+            try {
+                return JSON.parse(localStorage.getItem(`lavadora_completed_materials_${member.email}`)) || [];
+            } catch (e) {
+                return [];
+            }
+        },
+        setCompletedMaterials(list) {
+            const member = this.memberData;
+            if (member) {
+                localStorage.setItem(`lavadora_completed_materials_${member.email}`, JSON.stringify(list));
+            }
+        },
+        get certificateName() {
+            const member = this.memberData;
+            return member ? (member.certificate_name || '') : '';
+        },
+        setCertificateName(name) {
+            const member = this.memberData;
+            if (member) {
+                member.certificate_name = name;
+                sessionStorage.setItem('lavadora_member_data', JSON.stringify(member));
+            }
+        },
+        get certificateDate() {
+            const member = this.memberData;
+            if (member && member.certificate_date) {
+                return member.certificate_date;
+            }
+            const today = new Date();
+            const dd   = String(today.getDate()).padStart(2, '0');
+            const mm   = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            const date = `${dd}/${mm}/${yyyy}`;
+            if (member) {
+                member.certificate_date = date;
+                sessionStorage.setItem('lavadora_member_data', JSON.stringify(member));
+            }
+            return date;
+        }
+    };
+
+    /* ==========================================================================
+       ROTEADOR BASEADO EM HASH
+       ========================================================================== */
+    const loginView     = document.getElementById('login-view');
+    const dashboardView = document.getElementById('dashboard-view');
+
+    function router() {
+        const hash = window.location.hash || '#/login';
+        if (hash === '#/dashboard') {
+            if (!STATE.isLoggedIn) { window.location.hash = '#/login'; return; }
+            showView('dashboard');
+            initDashboard();
+        } else {
+            if (STATE.isLoggedIn) { window.location.hash = '#/dashboard'; return; }
+            showView('login');
+        }
+    }
+
+    function showView(viewName) {
+        if (viewName === 'login') {
+            loginView.classList.remove('hidden');
+            dashboardView.classList.add('hidden');
+        } else {
+            loginView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+        }
+    }
+
+    window.addEventListener('hashchange', router);
+    router();
+
+    /* ==========================================================================
+       LÓGICA DE LOGIN
+       ========================================================================== */
+    const loginForm      = document.getElementById('login-form');
+    const emailInput     = document.getElementById('login-email');
+    const loginFeedback  = document.getElementById('login-feedback');
+    const btnSubmitLogin = document.getElementById('btn-submit-login');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailValue = emailInput.value.trim().toLowerCase();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailValue || !emailRegex.test(emailValue)) {
+                emailInput.closest('.form-group').classList.add('has-error');
+                return;
+            }
+            emailInput.closest('.form-group').classList.remove('has-error');
+
+            btnSubmitLogin.disabled = true;
+            btnSubmitLogin.querySelector('span').innerText = 'Verificando...';
+
+            supabase
+                .from('members')
+                .select('*')
+                .eq('email', emailValue)
+                .single()
+                .then(({ data, error }) => {
+                    btnSubmitLogin.disabled = false;
+                    btnSubmitLogin.querySelector('span').innerText = 'Acessar Área de Membros';
+
+                    if (error || !data) {
+                        loginFeedback.innerText = 'E-mail incorreto ou não cadastrado. Use seu e-mail de compra.';
+                        loginFeedback.style.display = 'block';
+                        return;
+                    }
+
+                    STATE.login(data);
+                    loginFeedback.style.display = 'none';
+                    loginForm.reset();
+                    window.location.hash = '#/dashboard';
+                })
+                .catch(err => {
+                    console.error('Erro na autenticação:', err);
+                    btnSubmitLogin.disabled = false;
+                    btnSubmitLogin.querySelector('span').innerText = 'Acessar Área de Membros';
+                    loginFeedback.innerText = 'Erro de conexão com o banco de dados. Tente novamente.';
+                    loginFeedback.style.display = 'block';
+                });
+        });
+
+        emailInput.addEventListener('input', () => {
+            emailInput.closest('.form-group').classList.remove('has-error');
+            loginFeedback.style.display = 'none';
+        });
+    }
+
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            STATE.logout();
+            window.location.hash = '#/login';
+        });
+    }
+
+    /* ==========================================================================
+       DASHBOARD: PROGRESSO E MATERIAIS
+       ========================================================================== */
+    const checkButtons     = document.querySelectorAll('.btn-check-complete');
+    const progressBarFill  = document.getElementById('progress-bar-fill');
+    const progressFraction = document.getElementById('progress-fraction');
+
+    const certStateLocked    = document.getElementById('cert-state-locked');
+    const certStateForm      = document.getElementById('cert-state-form');
+    const certStateReady     = document.getElementById('cert-state-ready');
+    const studentNameDisplay = document.getElementById('student-name-display');
+
+    // IDs dos materiais do plano completo (produto principal + 4 bônus)
+    const COMPLETE_PLAN_IDS = [
+        'card-main-product',
+        'card-bonus-1',
+        'card-bonus-2',
+        'card-bonus-3',
+        'card-bonus-4'
+    ];
+
+    function initDashboard() {
+        const member = STATE.memberData;
+        if (!member) {
+            STATE.logout();
+            window.location.hash = '#/login';
+            return;
+        }
+
+        // Atualiza saudação
+        const userGreeting = document.querySelector('.user-greeting');
+        if (userGreeting) {
+            userGreeting.innerText = `Olá, ${member.name}!`;
+        }
+
+        // Regras de Planos: Básico só acessa o produto principal
+        if (member.plan === 'Básico') {
+            document.getElementById('card-bonus-1')?.classList.add('hidden');
+            document.getElementById('card-bonus-2')?.classList.add('hidden');
+            document.getElementById('card-bonus-3')?.classList.add('hidden');
+            document.getElementById('card-bonus-4')?.classList.add('hidden');
+            document.getElementById('card-certificate')?.classList.add('hidden');
+
+            const progressSection = document.querySelector('.progress-section');
+            if (progressSection) progressSection.classList.add('hidden');
+        } else {
+            // Plano Completo: exibe bônus e certificado
+            document.getElementById('card-bonus-1')?.classList.remove('hidden');
+            document.getElementById('card-bonus-2')?.classList.remove('hidden');
+            document.getElementById('card-bonus-3')?.classList.remove('hidden');
+            document.getElementById('card-bonus-4')?.classList.remove('hidden');
+            document.getElementById('card-certificate')?.classList.remove('hidden');
+
+            const progressSection = document.querySelector('.progress-section');
+            if (progressSection) progressSection.classList.remove('hidden');
+        }
+
+        // Atualiza links de acesso a partir dos dados do membro (campo drive_links ou link)
+        if (member.drive_link || member.link) {
+            const mainLink = member.drive_link || member.link;
+            const linkEl = document.getElementById('link-main-product');
+            if (linkEl) linkEl.href = mainLink;
+        }
+
+        const completed = STATE.completedMaterials;
+        checkButtons.forEach(button => {
+            const cardId = button.getAttribute('data-card-id');
+            const card   = document.getElementById(cardId);
+            if (completed.includes(cardId)) {
+                card?.classList.add('is-completed');
+                button.querySelector('.btn-check-text').innerText = 'Concluído';
+            } else {
+                card?.classList.remove('is-completed');
+                button.querySelector('.btn-check-text').innerText = 'Concluir';
+            }
+        });
+        updateProgressUI(completed);
+    }
+
+    checkButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const cardId  = button.getAttribute('data-card-id');
+            const card    = document.getElementById(cardId);
+            let completed = STATE.completedMaterials;
+
+            if (completed.includes(cardId)) {
+                completed = completed.filter(id => id !== cardId);
+                card?.classList.remove('is-completed');
+                button.querySelector('.btn-check-text').innerText = 'Concluir';
+            } else {
+                completed.push(cardId);
+                card?.classList.add('is-completed');
+                button.querySelector('.btn-check-text').innerText = 'Concluído';
+                triggerConfettiExplosion();
+            }
+
+            STATE.setCompletedMaterials(completed);
+            updateProgressUI(completed);
+        });
+    });
+
+    function getAvailableMaterialIds() {
+        const member = STATE.memberData;
+        if (!member) return [];
+
+        if (member.plan === 'Básico') {
+            return ['card-main-product'];
+        }
+        return [...COMPLETE_PLAN_IDS];
+    }
+
+    function updateProgressUI(completedList) {
+        const availableIds = getAvailableMaterialIds();
+        const count      = completedList.filter(id => availableIds.includes(id)).length;
+        const total      = availableIds.length;
+        const percentage = total > 0 ? (count / total) * 100 : 0;
+        if (progressBarFill)  progressBarFill.style.width  = `${percentage}%`;
+        if (progressFraction) progressFraction.innerText   = `${count} de ${total}`;
+        evaluateCertificateState(count, total);
+    }
+
+    function triggerConfettiExplosion() {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 120,
+                spread: 70,
+                origin: { y: 0.7 },
+                colors: ['#032B69', '#0559A5', '#7ECCFA', '#d4e9fc', '#ffffff']
+            });
+        }
+    }
+
+    function triggerSuccessCelebration() {
+        if (typeof confetti === 'function') {
+            const duration = 2.5 * 1000;
+            const end      = Date.now() + duration;
+            const blueColors = ['#032B69', '#0559A5', '#7ECCFA', '#d4e9fc', '#ffffff'];
+
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60,  spread: 55, origin: { x: 0 }, colors: blueColors });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: blueColors });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+    }
+
+    /* ==========================================================================
+       LÓGICA DE ESTADOS DO CERTIFICADO
+       ========================================================================== */
+    const certificateNameForm = document.getElementById('certificate-name-form');
+    const certFullNameInput   = document.getElementById('cert-full-name');
+    const btnSubmitCert       = document.getElementById('btn-submit-cert');
+
+    function evaluateCertificateState(completedCount, totalCount = 5) {
+        if (!certStateLocked || !certStateForm || !certStateReady) return;
+        certStateLocked.classList.add('hidden');
+        certStateForm.classList.add('hidden');
+        certStateReady.classList.add('hidden');
+
+        const lockStatusEl = certStateLocked.querySelector('.lock-status');
+        if (lockStatusEl) {
+            lockStatusEl.innerText = `Bloqueado (Complete ${totalCount}/${totalCount} materiais)`;
+        }
+        const cardDescEl = certStateLocked.querySelector('.card-desc');
+        if (cardDescEl) {
+            cardDescEl.innerText = `Complete a leitura e o monitoramento dos ${totalCount} materiais anteriores para habilitar a emissão do seu certificado.`;
+        }
+
+        if (completedCount < totalCount) {
+            certStateLocked.classList.remove('hidden');
+        } else {
+            const savedName = STATE.certificateName;
+            if (!savedName) {
+                certStateForm.classList.remove('hidden');
+            } else {
+                certStateReady.classList.remove('hidden');
+                if (studentNameDisplay) studentNameDisplay.innerText = savedName;
+            }
+        }
+    }
+
+    if (certificateNameForm) {
+        certificateNameForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const rawName = certFullNameInput.value.trim();
+            if (!rawName || rawName.length < 3) {
+                certFullNameInput.closest('.form-group').classList.add('has-error');
+                return;
+            }
+            certFullNameInput.closest('.form-group').classList.remove('has-error');
+
+            const member = STATE.memberData;
+            if (!member) return;
+
+            btnSubmitCert.disabled = true;
+            btnSubmitCert.querySelector('span').innerText = 'Processando...';
+
+            const todayDate = STATE.certificateDate;
+
+            supabase
+                .from('members')
+                .update({ certificate_name: rawName, certificate_date: todayDate })
+                .eq('email', member.email)
+                .is('certificate_name', null)
+                .select()
+                .then(({ data, error }) => {
+                    btnSubmitCert.disabled = false;
+                    btnSubmitCert.querySelector('span').innerText = 'Emitir Meu Certificado';
+
+                    if (error || !data || data.length === 0) {
+                        alert('Não foi possível emitir o certificado. Verifique se ele já foi emitido.');
+                        return;
+                    }
+
+                    STATE.setCertificateName(rawName);
+                    triggerSuccessCelebration();
+                    updateProgressUI(STATE.completedMaterials);
+                })
+                .catch(err => {
+                    console.error('Erro ao emitir certificado:', err);
+                    btnSubmitCert.disabled = false;
+                    btnSubmitCert.querySelector('span').innerText = 'Emitir Meu Certificado';
+                    alert('Erro de conexão ao salvar certificado. Tente novamente.');
+                });
+        });
+
+        certFullNameInput.addEventListener('input', () => {
+            certFullNameInput.closest('.form-group').classList.remove('has-error');
+        });
+    }
+
+    /* ==========================================================================
+       MODAL DO CERTIFICADO — CANVAS (preview, download, print)
+       ========================================================================== */
+    const btnOpenCertificate  = document.getElementById('btn-open-certificate');
+    const certificateModal    = document.getElementById('certificate-modal');
+    const btnCloseModal       = document.getElementById('btn-close-modal');
+    const btnPrintCertificate = document.getElementById('btn-print-certificate');
+    const btnDownloadPng      = document.getElementById('btn-download-png');
+    const previewCanvas       = document.getElementById('cert-preview-canvas');
+    const printCertImg        = document.getElementById('print-cert-img');
+
+    function drawCertificate(canvas, studentName, dateStr, useCors) {
+        return new Promise((resolve, reject) => {
+            const W = 1536, H = 1024;
+            canvas.width  = W;
+            canvas.height = H;
+            const ctx = canvas.getContext('2d');
+
+            const parts = (dateStr || '').split('/');
+            const day   = parts[0] || '';
+            const month = parts[1] || '';
+            const year  = parts[2] || '';
+            const name  = (studentName || '').toUpperCase();
+
+            const img = new Image();
+            if (useCors) img.crossOrigin = 'anonymous';
+
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, W, H);
+
+                ctx.shadowColor  = 'transparent';
+                ctx.shadowBlur   = 0;
+                ctx.fillStyle    = '#032B69';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign    = 'center';
+
+                // --- NOME ---
+                let fontSize = 52;
+                if      (name.length > 32) fontSize = 28;
+                else if (name.length > 25) fontSize = 36;
+                else if (name.length > 18) fontSize = 44;
+
+                ctx.font = `bold ${fontSize}px Cinzel, Georgia, serif`;
+                ctx.fillText(name, 768, 540);
+
+                // --- DATA ---
+                ctx.font = 'bold 26px Outfit, Arial, sans-serif';
+                ctx.fillText(day,   1149, 874);
+                ctx.fillText(month, 1230, 874);
+                ctx.fillText(year,  1334, 874);
+
+                resolve(canvas);
+            };
+
+            img.onerror = () => reject(new Error('Falha ao carregar imagem do certificado'));
+            img.src = './certificado.png';
+        });
+    }
+
+    if (btnOpenCertificate) {
+        btnOpenCertificate.addEventListener('click', () => {
+            certificateModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            drawCertificate(previewCanvas, STATE.certificateName, STATE.certificateDate, false)
+                .catch(err => console.error('Erro ao renderizar preview:', err));
+        });
+    }
+
+    const closeModal = () => {
+        certificateModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+
+    if (certificateModal) {
+        certificateModal.addEventListener('click', (e) => {
+            if (e.target === certificateModal) closeModal();
+        });
+    }
+
+    if (btnPrintCertificate) {
+        btnPrintCertificate.addEventListener('click', () => {
+            const tmp = document.createElement('canvas');
+            drawCertificate(tmp, STATE.certificateName, STATE.certificateDate, false)
+                .then(c => {
+                    try {
+                        printCertImg.src = c.toDataURL('image/png');
+                    } catch (e) {
+                        printCertImg.src = './certificado.png';
+                    }
+                    printCertImg.onload  = () => window.print();
+                    printCertImg.onerror = () => window.print();
+                })
+                .catch(() => window.print());
+        });
+    }
+
+    if (btnDownloadPng) {
+        btnDownloadPng.addEventListener('click', () => {
+            const span = btnDownloadPng.querySelector('span');
+            btnDownloadPng.disabled = true;
+            span.innerText = 'Processando...';
+
+            const tmp = document.createElement('canvas');
+            drawCertificate(tmp, STATE.certificateName, STATE.certificateDate, true)
+                .then(c => {
+                    const dataUrl = c.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.download = `Certificado_${STATE.certificateName.replace(/\s+/g, '_')}.png`;
+                    a.href = dataUrl;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                })
+                .catch(err => {
+                    console.error('Erro ao exportar PNG:', err);
+                    alert('Não foi possível baixar a imagem (restrição CORS). Use "Imprimir / Salvar PDF" como alternativa.');
+                })
+                .finally(() => {
+                    btnDownloadPng.disabled = false;
+                    span.innerText = 'Baixar Imagem (.png)';
+                });
+        });
+    }
+
+});
+
