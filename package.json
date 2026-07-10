@@ -1,0 +1,14 @@
+{
+  "name": "manual-reparos-maquinas",
+  "version": "1.0.0",
+  "description": "Pagina de Vendas - +150 Reparos e Diagnosticos Ilustrados em Maquinas de Lavar e Tanquinhos",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
