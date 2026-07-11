@@ -11,8 +11,8 @@ app.use(express.json());
 const PORT = process.env.PORT || 80;
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://dysjpxmzheyqhdiukpgu.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5c2pweG16aGV5cWhkaXVrcGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MzEyMDQsImV4cCI6MjA5OTMwNzIwNH0.6wKe7_Px-xm5oiv6RhkbGtFJEOIf5VRXydwUj7vIlpU';
-const BREVO_API_KEY = process.env.BREVO_API_KEY || ''; // Deve ser configurada no painel do EasyPanel
-const SENDER_EMAIL = process.env.SENDER_EMAIL || 'contato@reparoilustrado.hyzencompra.shop';
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'reparoilustrado@hyzencompra.shop';
 const SENDER_NAME = process.env.SENDER_NAME || 'Reparo Ilustrado';
 
 // Inicializa cliente do Supabase

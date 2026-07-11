@@ -506,8 +506,7 @@
             };
 
             try {
-                // Dispara o POST diretamente para a Edge Function de Webhook do Supabase
-                const response = await fetch("/api/webhook-gg", {
+                const response = await fetch("https://dysjpxmzheyqhdiukpgu.supabase.co/functions/v1/ggcheckout-webhook", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

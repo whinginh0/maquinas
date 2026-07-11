@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        CHECKOUT REDIRECT WITH UTM PASSTHROUGH
        ========================================================================== */
-    const CHECKOUT_BASICO  = 'https://ggcheckout.app/checkout/v5/YTXOkV8UV79V5s5zCNNK';
-    const CHECKOUT_COMPLETO = 'https://ggcheckout.app/checkout/v5/dAZz8SNiPr5dALeIEE5f';
+    const CHECKOUT_BASICO  = 'https://ggcheckout.app/checkout/v5/koVq5SGjh01n1QcwYuzI';
+    const CHECKOUT_COMPLETO = 'https://ggcheckout.app/checkout/v5/eMGf09hal4ojXXR0pGrw';
 
     function redirectToCheckout(baseUrl, planName, price) {
         // Meta Pixel — Initiate Checkout Event
@@ -246,3 +246,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     */
 });
+

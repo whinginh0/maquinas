@@ -8,7 +8,6 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'pagina-de-vendas/index.html'),
         back: resolve(__dirname, 'pagina-de-vendas/back/index.html'),
-        upsell1: resolve(__dirname, 'pagina-de-vendas/upsell1/index.html'),
         painelManual: resolve(__dirname, 'pagina-de-vendas/painel-manual.html'),
       },
     },

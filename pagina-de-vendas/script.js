@@ -26,22 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ==========================================================================
-       UPSELL POPUP LOGIC
+       DIRECT CHECKOUT LOGIC
        ========================================================================== */
     const btnComprarBasico = document.getElementById('btn-comprar-basico');
     const btnComprarCompleto = document.getElementById('btn-comprar-completo');
-    
-    const upsellModal = document.getElementById('upsell-modal');
-    const btnCloseUpsell = document.getElementById('btn-close-upsell');
-    const btnUpsellAccept = document.getElementById('btn-upsell-accept');
-    const btnUpsellDecline = document.getElementById('btn-upsell-decline');
 
-    // Open Upsell Modal on click of Basic Plan button
+    // Redirect to Basic Plan directly
     if (btnComprarBasico) {
-        btnComprarBasico.addEventListener('click', (e) => {
-            e.preventDefault();
-            upsellModal.classList.add('open');
-            document.body.style.overflow = 'hidden'; // Stop background scrolling
+        btnComprarBasico.addEventListener('click', () => {
+            redirectToCheckout('https://ggcheckout.app/checkout/v5/11xScaWLnwsobLK8Makg');
         });
     }
 
@@ -77,36 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Redirect to Complete Plan directly
     if (btnComprarCompleto) {
         btnComprarCompleto.addEventListener('click', () => {
-            redirectToCheckout('https://ggcheckout.app/checkout/v5/AyfdPHjP0tPFjTJoJA9E');
+            redirectToCheckout('https://ggcheckout.app/checkout/v5/YS20v5CqtV7nRlpNk63q');
         });
     }
 
-    // Modal Action: Close
-    const closeUpsell = () => {
-        upsellModal.classList.remove('open');
-        document.body.style.overflow = ''; // Restore background scrolling
-    };
 
-    if (btnCloseUpsell) btnCloseUpsell.addEventListener('click', closeUpsell);
-    if (btnUpsellDecline) btnUpsellDecline.addEventListener('click', () => {
-        closeUpsell();
-        redirectToCheckout('https://ggcheckout.app/checkout/v5/SjmRcTJUymFjpEDyvBHO');
-    });
-
-    // Modal Action: Accept Upsell
-    if (btnUpsellAccept) {
-        btnUpsellAccept.addEventListener('click', () => {
-            closeUpsell();
-            redirectToCheckout('https://ggcheckout.app/checkout/v5/PARZasW39xteFDYrd6HS');
-        });
-    }
-
-    // Close Modal on clicking outside the modal content
-    window.addEventListener('click', (e) => {
-        if (e.target === upsellModal) {
-            closeUpsell();
-        }
-    });
 
     /* ==========================================================================
        LIGHTBOX / CASE DETAILS MODAL
@@ -328,3 +296,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     */
 });
+
