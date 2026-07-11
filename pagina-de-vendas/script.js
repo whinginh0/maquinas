@@ -26,15 +26,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ==========================================================================
-       DIRECT CHECKOUT LOGIC
+       UPSELL POPUP LOGIC
        ========================================================================== */
     const btnComprarBasico = document.getElementById('btn-comprar-basico');
     const btnComprarCompleto = document.getElementById('btn-comprar-completo');
+    
+    const upsellModal = document.getElementById('upsell-modal');
+    const btnCloseUpsell = document.getElementById('btn-close-upsell');
+    const btnUpsellAccept = document.getElementById('btn-upsell-accept');
+    const btnUpsellDecline = document.getElementById('btn-upsell-decline');
 
-    // Redirect to Basic Plan directly
+    // Open Upsell Modal on click of Basic Plan button
     if (btnComprarBasico) {
-        btnComprarBasico.addEventListener('click', () => {
-            redirectToCheckout('https://ggcheckout.app/checkout/v5/11xScaWLnwsobLK8Makg');
+        btnComprarBasico.addEventListener('click', (e) => {
+            e.preventDefault();
+            upsellModal.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Stop background scrolling
         });
     }
 
@@ -74,7 +81,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Modal Action: Close
+    const closeUpsell = () => {
+        upsellModal.classList.remove('open');
+        document.body.style.overflow = ''; // Restore background scrolling
+    };
 
+    if (btnCloseUpsell) btnCloseUpsell.addEventListener('click', closeUpsell);
+    if (btnUpsellDecline) btnUpsellDecline.addEventListener('click', () => {
+        closeUpsell();
+        redirectToCheckout('https://ggcheckout.app/checkout/v5/11xScaWLnwsobLK8Makg');
+    });
+
+    // Modal Action: Accept Upsell
+    if (btnUpsellAccept) {
+        btnUpsellAccept.addEventListener('click', () => {
+            closeUpsell();
+            redirectToCheckout('https://ggcheckout.app/checkout/v5/24Ltij8Oh5GF4R4gfIyq');
+        });
+    }
+
+    // Close Modal on clicking outside the modal content
+    window.addEventListener('click', (e) => {
+        if (e.target === upsellModal) {
+            closeUpsell();
+        }
+    });
 
     /* ==========================================================================
        LIGHTBOX / CASE DETAILS MODAL
