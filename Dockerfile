@@ -1,12 +1,18 @@
-FROM nginx:alpine
+FROM node:18-alpine
 
-# Copia a página de vendas (pasta raiz servida pelo nginx)
-COPY pagina-de-vendas/ /usr/share/nginx/html/
+WORKDIR /app
 
-# Copia a área de membros para um subdiretório
-COPY area-de-membros/ /usr/share/nginx/html/area-de-membros/
+# Copia os arquivos do package.json e package-lock.json
+COPY package*.json ./
 
-# Expose port 80
+# Instala as dependências de produção
+RUN npm install --production
+
+# Copia todo o restante do código da aplicação
+COPY . .
+
+# Expor a porta padrão (o EasyPanel roteará o tráfego HTTP para cá)
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Inicia o servidor Node.js
+CMD ["node", "server.js"]

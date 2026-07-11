@@ -363,7 +363,7 @@
     </div>
 
     <script>
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHZ3aGhteHZqbGJua3NnamtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTE0MzksImV4cCI6MjA5Nzk4NzQzOX0.hUCNqjqSi7haGBHRPTFhkYdAMmuDXwQOxDUwNx9QcXk";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5c2pweG16aGV5cWhkaXVrcGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MzEyMDQsImV4cCI6MjA5OTMwNzIwNH0.6wKe7_Px-xm5oiv6RhkbGtFJEOIf5VRXydwUj7vIlpU";
         let isExistingMember = false;
 
         function selectPlan(plan) {
@@ -383,7 +383,7 @@
             if (!email) return;
 
             try {
-                const response = await fetch(`https://zexvwhhmxvjlbnksgjkr.supabase.co/rest/v1/members?email=eq.${encodeURIComponent(email)}`, {
+                const response = await fetch(`https://dysjpxmzheyqhdiukpgu.supabase.co/rest/v1/members?email=eq.${encodeURIComponent(email)}`, {
                     headers: {
                         "apikey": supabaseAnonKey,
                         "Authorization": `Bearer ${supabaseAnonKey}`
@@ -507,7 +507,7 @@
 
             try {
                 // Dispara o POST diretamente para a Edge Function de Webhook do Supabase
-                const response = await fetch("https://zexvwhhmxvjlbnksgjkr.supabase.co/functions/v1/ggcheckout-webhook", {
+                const response = await fetch("/api/webhook-gg", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        INICIALIZAÇÃO DO SUPABASE
        ========================================================================== */
-    const SUPABASE_URL = "https://zexvwhhmxvjlbnksgjkr.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleHZ3aGhteHZqbGJua3NnamtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTE0MzksImV4cCI6MjA5Nzk4NzQzOX0.hUCNqjqSi7haGBHRPTFhkYdAMmuDXwQOxDUwNx9QcXk";
+    const SUPABASE_URL = "https://dysjpxmzheyqhdiukpgu.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5c2pweG16aGV5cWhkaXVrcGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MzEyMDQsImV4cCI6MjA5OTMwNzIwNH0.6wKe7_Px-xm5oiv6RhkbGtFJEOIf5VRXydwUj7vIlpU";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     /* ==========================================================================
